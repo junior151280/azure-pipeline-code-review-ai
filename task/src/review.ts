@@ -1,5 +1,6 @@
 import { OpenAIClient, ReviewRequest } from './openai-client';
 import { addCommentToPR } from './pr';
+import { RetryManager } from './retry-manager';
 
 export interface ReviewResult {
   fileName: string;
@@ -11,6 +12,10 @@ export interface ReviewResult {
   };
 }
 
+export interface ReviewOptions {
+  maxRetries?: number;
+}
+
 export async function reviewFile(
   gitDiff: string, 
   fileName: string, 
@@ -19,12 +24,14 @@ export async function reviewFile(
   model: string,
   maxTokens: number, 
   temperature: number, 
-  additionalPrompts: string[] = []
+  additionalPrompts: string[] = [],
+  options: ReviewOptions = {}
 ): Promise<ReviewResult> {
   console.log(`Starting review of file: ${fileName}...`);
 
   try {
-    const client = new OpenAIClient(apiKey, endpoint);
+    const retryManager = new RetryManager({ maxRetries: options.maxRetries ?? 3 });
+    const client = new OpenAIClient(apiKey, endpoint, retryManager);
 
     const request: ReviewRequest = {
       gitDiff,

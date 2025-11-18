@@ -101,6 +101,22 @@
       "defaultValue": "false",
       "required": false,
       "helpMarkDown": "Select this option to support self-signed certificate."
+    },
+    {
+      "name": "max_concurrency",
+      "type": "string",
+      "label": "Max Concurrent Reviews",
+      "defaultValue": "3",
+      "required": false,
+      "helpMarkDown": "Maximum number of files to review concurrently. Higher values may speed up reviews but consume more API quota. Recommended: 3-5. Default: 3."
+    },
+    {
+      "name": "max_retries",
+      "type": "string",
+      "label": "Max Retry Attempts",
+      "defaultValue": "3",
+      "required": false,
+      "helpMarkDown": "Maximum number of retry attempts for failed API calls. Useful for handling transient errors (429, 500, 503). Default: 3."
     }
   ],
   "execution": {

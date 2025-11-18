@@ -1,4 +1,5 @@
 import { AzureOpenAI } from 'openai';
+import { RetryManager } from './retry-manager';
 
 export interface ReviewRequest {
   gitDiff: string;
@@ -25,8 +26,10 @@ export class OpenAIClient {
   private endpoint: string;
   private deploymentName: string;
   private apiVersion: string;
+  private retryManager: RetryManager;
 
-  constructor(apiKey: string, endpoint: string) {
+  constructor(apiKey: string, endpoint: string, retryManager?: RetryManager) {
+    this.retryManager = retryManager || new RetryManager();
     this.endpoint = endpoint;
     
     // Parse the endpoint to extract base URL, deployment name, and API version
@@ -88,53 +91,55 @@ export class OpenAIClient {
     console.log(`- Deployment: ${this.deploymentName}`);
     console.log(`- API Version: ${this.apiVersion}`);
 
-    try {
-      const response = await this.client.chat.completions.create({
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: request.maxTokens,
-        temperature: request.temperature,
-        model: '' // Model is not used with AzureOpenAI, deployment is set in constructor
-      });
+    return this.retryManager.executeWithRetry(async () => {
+      try {
+        const response = await this.client.chat.completions.create({
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: request.maxTokens,
+          temperature: request.temperature,
+          model: '' // Model is not used with AzureOpenAI, deployment is set in constructor
+        });
 
-      const review = response.choices[0]?.message?.content || 'No review generated.';
-      const usage = response.usage;
+        const review = response.choices[0]?.message?.content || 'No review generated.';
+        const usage = response.usage;
 
-      if (!usage) {
-        throw new Error('No usage information returned from API');
-      }
-
-      return {
-        review,
-        usage: {
-          completionTokens: usage.completion_tokens,
-          promptTokens: usage.prompt_tokens,
-          totalTokens: usage.total_tokens
+        if (!usage) {
+          throw new Error('No usage information returned from API');
         }
-      };
-    } catch (error: any) {
-      console.error(`OpenAI API Error Details:`);
-      console.error(`- Status: ${error.status || 'unknown'}`);
-      console.error(`- Message: ${error.message || 'unknown'}`);
-      console.error(`- Type: ${error.type || 'unknown'}`);
-      
-      if (error.status === 404) {
-        throw new Error(`Deployment '${this.deploymentName}' not found. Please check:\n` +
-          `1. The deployment name matches your Azure OpenAI deployment\n` +
-          `2. The endpoint URL is correct: ${this.endpoint}\n` +
-          `3. The API version is supported: ${this.apiVersion}\n` +
-          `4. The deployment is in the correct Azure region`);
+
+        return {
+          review,
+          usage: {
+            completionTokens: usage.completion_tokens,
+            promptTokens: usage.prompt_tokens,
+            totalTokens: usage.total_tokens
+          }
+        };
+      } catch (error: any) {
+        console.error(`OpenAI API Error Details:`);
+        console.error(`- Status: ${error.status || 'unknown'}`);
+        console.error(`- Message: ${error.message || 'unknown'}`);
+        console.error(`- Type: ${error.type || 'unknown'}`);
+        
+        if (error.status === 404) {
+          throw new Error(`Deployment '${this.deploymentName}' not found. Please check:\n` +
+            `1. The deployment name matches your Azure OpenAI deployment\n` +
+            `2. The endpoint URL is correct: ${this.endpoint}\n` +
+            `3. The API version is supported: ${this.apiVersion}\n` +
+            `4. The deployment is in the correct Azure region`);
+        }
+        
+        if (error instanceof Error) {
+          throw new Error(`OpenAI API error: ${error.message}`);
+        }
+        throw error;
       }
-      
-      if (error instanceof Error) {
-        throw new Error(`OpenAI API error: ${error.message}`);
-      }
-      throw error;
-    }
+    }, `Review for ${request.fileName}`);
   }
 
   private buildInstructions(additionalPrompts: string[]): string {
