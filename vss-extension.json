@@ -1,8 +1,8 @@
 {
     "manifestVersion": 1,
-    "id": "bfe3cd1b-dfb4-4c72-8f50-d0caea4f3db8",
+    "id": "cd11d9f3-81f4-4580-b689-066a2a51bad8",
     "name": "ADOPRCodeReviewAI",
-    "version": "0.0.8",
+    "version": "0.0.1",
     "publisher": "junior151280",
     "galleryFlags": [
         "Public",
