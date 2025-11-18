@@ -13,7 +13,7 @@
   "version": {
     "Major": "0",
     "Minor": "0",
-    "Patch": "3"
+    "Patch": "5"
   },
   "minimumAgentVersion": "1.95.0",
   "instanceNameFormat": "ADOPRCodeReviewAI $(message)",
@@ -49,7 +49,7 @@
       "required": false,
       "options": {
         "": "",
-        "gpt-4.1": "GPT 4.1",
+        "gpt-4.1-Discussion": "GPT 4.1",
         "gpt-4.1-jailtons": "GPT 4.1 Jailton's Custom"
       },
       "helpMarkDown": "The OpenAI model to use. not used if you use Azure OpenAI. if no model is selected, the GPT 3.5 Turbo model is used."

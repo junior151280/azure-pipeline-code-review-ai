@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { AzureOpenAI } from 'openai';
 
 export interface ReviewRequest {
   gitDiff: string;
@@ -21,7 +21,7 @@ export interface ReviewResponse {
 }
 
 export class OpenAIClient {
-  private client: OpenAI;
+  private client: AzureOpenAI;
   private endpoint: string;
   private deploymentName: string;
   private apiVersion: string;
@@ -34,24 +34,20 @@ export class OpenAIClient {
     this.deploymentName = parsed.deploymentName;
     this.apiVersion = parsed.apiVersion;
     
-    console.log(`Configuring OpenAI client:`);
-    console.log(`- Base URL: ${parsed.baseURL}`);
+    console.log(`Configuring Azure OpenAI client:`);
+    console.log(`- Endpoint: ${parsed.azureEndpoint}`);
     console.log(`- Deployment: ${this.deploymentName}`);
     console.log(`- API Version: ${this.apiVersion}`);
     
-    this.client = new OpenAI({
+    this.client = new AzureOpenAI({
       apiKey: apiKey,
-      baseURL: parsed.baseURL,
-      defaultHeaders: {
-        'api-key': apiKey
-      },
-      defaultQuery: {
-        'api-version': this.apiVersion
-      }
+      endpoint: parsed.azureEndpoint,
+      apiVersion: this.apiVersion,
+      deployment: this.deploymentName
     });
   }
 
-  private parseAzureEndpoint(fullEndpoint: string): { baseURL: string; deploymentName: string; apiVersion: string } {
+  private parseAzureEndpoint(fullEndpoint: string): { azureEndpoint: string; deploymentName: string; apiVersion: string } {
     // Azure OpenAI endpoint format:
     // https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version={version}
     // or
@@ -68,15 +64,16 @@ export class OpenAIClient {
       // Extract API version from query string
       const apiVersion = url.searchParams.get('api-version') || '2024-02-15-preview';
       
-      // Build base URL (just protocol + host + /openai)
-      const baseURL = `${url.protocol}//${url.host}/openai`;
+      // Azure endpoint is just protocol + host (no path)
+      const azureEndpoint = `${url.protocol}//${url.host}`;
       
-      return { baseURL, deploymentName, apiVersion };
+      return { azureEndpoint, deploymentName, apiVersion };
     } catch (error) {
       console.warn(`Could not parse endpoint URL: ${fullEndpoint}`);
-      // Fallback values
+      // Extract base endpoint without path
+      const baseMatch = fullEndpoint.match(/^(https?:\/\/[^\/]+)/);
       return {
-        baseURL: fullEndpoint,
+        azureEndpoint: baseMatch ? baseMatch[1] : fullEndpoint,
         deploymentName: 'gpt-4o',
         apiVersion: '2024-02-15-preview'
       };
@@ -87,13 +84,12 @@ export class OpenAIClient {
     const instructions = this.buildInstructions(request.additionalPrompts || []);
     const prompt = `${instructions}\n\nPatch to review:\n${request.gitDiff}`;
 
-    console.log(`Calling OpenAI API:`);
+    console.log(`Calling Azure OpenAI API:`);
     console.log(`- Deployment: ${this.deploymentName}`);
-    console.log(`- Endpoint: ${this.endpoint}`);
+    console.log(`- API Version: ${this.apiVersion}`);
 
     try {
       const response = await this.client.chat.completions.create({
-        model: this.deploymentName, // Use the extracted deployment name
         messages: [
           {
             role: 'user',
@@ -101,7 +97,8 @@ export class OpenAIClient {
           }
         ],
         max_tokens: request.maxTokens,
-        temperature: request.temperature
+        temperature: request.temperature,
+        model: '' // Model is not used with AzureOpenAI, deployment is set in constructor
       });
 
       const review = response.choices[0]?.message?.content || 'No review generated.';

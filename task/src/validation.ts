@@ -98,7 +98,7 @@ export class InputValidator {
 
   static validateModel(model: string | undefined): string {
     if (!model || model === '') {
-      return 'gpt-4o'; // Default to latest stable model
+      return 'gpt-4.1-jailtons'; // Default to latest stable model
     }
     return model;
   }
