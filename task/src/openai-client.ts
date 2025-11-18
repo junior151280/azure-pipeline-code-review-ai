@@ -22,26 +22,78 @@ export interface ReviewResponse {
 
 export class OpenAIClient {
   private client: OpenAI;
+  private endpoint: string;
+  private deploymentName: string;
+  private apiVersion: string;
 
   constructor(apiKey: string, endpoint: string) {
-    // Azure OpenAI requires a specific configuration
+    this.endpoint = endpoint;
+    
+    // Parse the endpoint to extract base URL, deployment name, and API version
+    const parsed = this.parseAzureEndpoint(endpoint);
+    this.deploymentName = parsed.deploymentName;
+    this.apiVersion = parsed.apiVersion;
+    
+    console.log(`Configuring OpenAI client:`);
+    console.log(`- Base URL: ${parsed.baseURL}`);
+    console.log(`- Deployment: ${this.deploymentName}`);
+    console.log(`- API Version: ${this.apiVersion}`);
+    
     this.client = new OpenAI({
       apiKey: apiKey,
-      baseURL: endpoint,
+      baseURL: parsed.baseURL,
       defaultHeaders: {
         'api-key': apiKey
       },
-      defaultQuery: undefined
+      defaultQuery: {
+        'api-version': this.apiVersion
+      }
     });
+  }
+
+  private parseAzureEndpoint(fullEndpoint: string): { baseURL: string; deploymentName: string; apiVersion: string } {
+    // Azure OpenAI endpoint format:
+    // https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version={version}
+    // or
+    // https://{admin-resource}.{region}.cognitiveservices.azure.com/openai/deployments/{deployment}/chat/completions?api-version={version}
+    
+    try {
+      const url = new URL(fullEndpoint);
+      
+      // Extract deployment name from path
+      // Path format: /openai/deployments/{deployment}/chat/completions
+      const pathMatch = url.pathname.match(/\/openai\/deployments\/([^\/]+)/);
+      const deploymentName = pathMatch ? pathMatch[1] : 'gpt-4o';
+      
+      // Extract API version from query string
+      const apiVersion = url.searchParams.get('api-version') || '2024-02-15-preview';
+      
+      // Build base URL (just protocol + host + /openai)
+      const baseURL = `${url.protocol}//${url.host}/openai`;
+      
+      return { baseURL, deploymentName, apiVersion };
+    } catch (error) {
+      console.warn(`Could not parse endpoint URL: ${fullEndpoint}`);
+      // Fallback values
+      return {
+        baseURL: fullEndpoint,
+        deploymentName: 'gpt-4o',
+        apiVersion: '2024-02-15-preview'
+      };
+    }
   }
 
   async reviewCode(request: ReviewRequest): Promise<ReviewResponse> {
     const instructions = this.buildInstructions(request.additionalPrompts || []);
     const prompt = `${instructions}\n\nPatch to review:\n${request.gitDiff}`;
 
+    console.log(`Calling OpenAI API:`);
+    console.log(`- Deployment: ${this.deploymentName}`);
+    console.log(`- Endpoint: ${this.endpoint}`);
+
     try {
       const response = await this.client.chat.completions.create({
-        model: request.model,
+        model: this.deploymentName, // Use the extracted deployment name
         messages: [
           {
             role: 'user',
@@ -67,7 +119,20 @@ export class OpenAIClient {
           totalTokens: usage.total_tokens
         }
       };
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`OpenAI API Error Details:`);
+      console.error(`- Status: ${error.status || 'unknown'}`);
+      console.error(`- Message: ${error.message || 'unknown'}`);
+      console.error(`- Type: ${error.type || 'unknown'}`);
+      
+      if (error.status === 404) {
+        throw new Error(`Deployment '${this.deploymentName}' not found. Please check:\n` +
+          `1. The deployment name matches your Azure OpenAI deployment\n` +
+          `2. The endpoint URL is correct: ${this.endpoint}\n` +
+          `3. The API version is supported: ${this.apiVersion}\n` +
+          `4. The deployment is in the correct Azure region`);
+      }
+      
       if (error instanceof Error) {
         throw new Error(`OpenAI API error: ${error.message}`);
       }
