@@ -26,9 +26,30 @@ https://admin-ma4fdje4-eastus2.cognitiveservices.azure.com/openai/deployments/gp
 [REST API Documentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference).
 
 ### Grant Permissions to the Build Service Agent
-Before using this task, make sure the build service has permissions to contribute to your REPOSITORY:
+Before using this task, make sure the build service has permissions to contribute to your REPOSITORY.
+
+**Step-by-step:**
+1. Go to **Project Settings** in Azure DevOps
+2. Navigate to **Repositories** → select your repository
+3. Click on the **Security** tab
+4. Find `{Project Name} Build Service ({Organization Name})`
+5. Set the following permissions to **Allow**:
+   - ✅ **Contribute to pull requests**
+   - ✅ **Contribute**
+
+**Alternative: Enable in Pipeline Settings**
+1. Go to your pipeline
+2. Click **Edit**
+3. Click the **⋮** (More actions) menu → **Settings**
+4. Under **YAML** → **Advanced**, enable:
+   - ☑️ **Allow scripts to access the OAuth token**
 
 ![contribute_to_pr](https://github.com/junior151280/azure-pipeline-code-review-ai/blob/main/images/contribute_to_pr.png?raw=true)
+
+**Common Issues:**
+- If you see `401 Unauthorized` errors, the Build Service lacks the required permissions
+- Make sure both repository permissions AND pipeline OAuth token access are enabled
+- For more details, see: https://stackoverflow.com/a/57985733
 
 ### Allow the Task to Access the System Token
 Add a checkout section with persistCredentials set to true.
