@@ -1,14 +1,8 @@
 import * as tl from "azure-pipelines-task-lib/task";
-import { Configuration, OpenAIApi } from 'openai';
 import { deleteExistingComments } from './pr';
 import { reviewFile } from './review';
-import { consumeApi } from './review';
-import { getTargetBranchName } from './utils';
-import { getChangedFiles } from './git';
-import * as https from 'https';
-import * as http from 'http';
+import { InputValidator } from './validation';
 import { Repository } from './repository';
-import minimatch from 'minimatch';
 
 async function run() {
   try {
@@ -17,78 +11,112 @@ async function run() {
       return;
     }
 
-    const _repository = new Repository();
-    const pr_1 = require("./pr");
-    const reviewTs = require("./review");
-    const supportSelfSignedCertificate = tl.getBoolInput('support_self_signed_certificate');
+    // Retrieve inputs
     const apiKey = tl.getInput('api_key', true);
     const aoiEndpoint = tl.getInput('aoi_endpoint', true);
-    const tokenMax = tl.getInput('aoi_tokenMax', true);
-    const temperature = tl.getInput('aoi_temperature', true);
-    const additionalPrompts = tl.getInput('additional_prompts', false)?.split(',')
+    const tokenMaxInput = tl.getInput('aoi_tokenMax', true);
+    const temperatureInput = tl.getInput('aoi_temperature', true);
+    const additionalPromptsInput = tl.getInput('additional_prompts', false);
     const fileExtensions = tl.getInput('file_extensions', false);
     const filesToExclude = tl.getInput('file_excludes', false);
-    const openaiModel = tl.getInput('model') || 'gpt-4-32k';
-    const useHttps = tl.getBoolInput('use_https', true);
+    const openaiModel = tl.getInput('model');
 
-    if (apiKey == undefined) {
-      tl.setResult(tl.TaskResult.Failed, 'No API Key provided!');
+    // Validate inputs
+    const apiKeyValidation = InputValidator.validateApiKey(apiKey);
+    if (!apiKeyValidation.isValid) {
+      tl.setResult(tl.TaskResult.Failed, apiKeyValidation.errors.join(', '));
       return;
     }
 
-    if (aoiEndpoint == undefined) {
-      tl.setResult(tl.TaskResult.Failed, 'No Azure OpenAI Endpoint provided!');
-      return;
-    }
-    
-    let Agent: http.Agent | https.Agent;
-
-    if(useHttps) {
-      Agent = new https.Agent({rejectUnauthorized: !supportSelfSignedCertificate});
-    }
-    else
-    {
-      Agent = new http.Agent();
-    }
-
-    let targetBranch = getTargetBranchName();
-
-    if (!targetBranch) {
-      tl.setResult(tl.TaskResult.Failed, 'No target branch found!');
+    const endpointValidation = InputValidator.validateEndpoint(aoiEndpoint);
+    if (!endpointValidation.isValid) {
+      tl.setResult(tl.TaskResult.Failed, endpointValidation.errors.join(', '));
       return;
     }
 
-    await deleteExistingComments(Agent);
+    const temperatureValidation = InputValidator.validateTemperature(temperatureInput);
+    if (temperatureValidation.errors.length > 0) {
+      temperatureValidation.errors.forEach(err => console.log(`Warning: ${err}`));
+    }
+    const temperature = temperatureValidation.value;
+
+    const maxTokensValidation = InputValidator.validateMaxTokens(tokenMaxInput);
+    if (maxTokensValidation.errors.length > 0) {
+      maxTokensValidation.errors.forEach(err => console.log(`Warning: ${err}`));
+    }
+    const maxTokens = maxTokensValidation.value;
+
+    const model = InputValidator.validateModel(openaiModel);
+    console.log(`Using model: ${model}`);
+
+    const additionalPrompts = additionalPromptsInput 
+      ? additionalPromptsInput.split(',').map(p => p.trim()).filter(p => p.length > 0)
+      : [];
+
+    // Initialize repository
+    const repository = new Repository();
+
+    // Delete existing comments
+    await deleteExistingComments();
 
     console.log('Starting Code Review');
 
-    let filesToReview = await _repository.GetChangedFiles(fileExtensions, filesToExclude);
-    if (filesToReview.length === 0 || filesToReview.length == 0) {
-      console.log(`No reviewable code found. Please review the task input parameters.`);
+    // Get files to review
+    const filesToReview = await repository.GetChangedFiles(fileExtensions, filesToExclude);
+    if (filesToReview.length === 0) {
+      console.log('No reviewable code found. Please review the task input parameters.');
       tl.setResult(tl.TaskResult.SucceededWithIssues, "No reviewable code found. Please review the task input parameters.");
-      return
+      return;
     }
 
     console.log(`Detected changes in ${filesToReview.length} file(s)`);
 
-    for (let index = 0; index < filesToReview.length; index++) {
+    // Track overall usage
+    let totalCompletionTokens = 0;
+    let totalPromptTokens = 0;
+    let totalTokens = 0;
+    let filesWithComments = 0;
 
-      const fileToReview = filesToReview[index];
-      let diff = await _repository.GetDiff(fileToReview);
-      // TODO: Extract model name from endpoint and replace with openaiModel parameter
-      // let endpoint = aoiEndpoint.replace(aoiEndpoint.match(/gpt[^/]+/)[0], openaiModel);
+    // Review each file
+    for (const fileToReview of filesToReview) {
+      try {
+        const diff = await repository.GetDiff(fileToReview);
 
-      let review = await reviewFile(diff, fileToReview, Agent, apiKey, aoiEndpoint, tokenMax, temperature, additionalPrompts)
+        const result = await reviewFile(
+          diff, 
+          fileToReview, 
+          apiKey!, 
+          aoiEndpoint!, 
+          model,
+          maxTokens, 
+          temperature, 
+          additionalPrompts
+        );
 
-      if (diff.indexOf('NO_COMMENT') < 0) {
-        await pr_1.addCommentToPR(fileToReview, review, Agent);
+        totalCompletionTokens += result.usage.completionTokens;
+        totalPromptTokens += result.usage.promptTokens;
+        totalTokens += result.usage.totalTokens;
+
+        if (result.hasComments) {
+          filesWithComments++;
+        }
+
+        console.log(`Review completed for file: ${fileToReview}`);
+        console.log(`Token Usage - Completion: ${result.usage.completionTokens}, Prompt: ${result.usage.promptTokens}, Total: ${result.usage.totalTokens}`);
+        console.log('----------------------------------');
+      } catch (error) {
+        console.error(`Failed to review file ${fileToReview}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Continue with other files even if one fails
       }
-
-      console.log(`Review completed for file: ${fileToReview}`)
-      console.log(`----------------------------------`)
-      console.log(`Token Usage: ${consumeApi}`)
-      console.log(`----------------------------------`)
     }
+
+    // Summary
+    console.log('=================================');
+    console.log('Code Review Summary');
+    console.log(`Files reviewed: ${filesToReview.length}`);
+    console.log(`Files with comments: ${filesWithComments}`);
+    console.log(`Total tokens used: ${totalTokens} (Completion: ${totalCompletionTokens}, Prompt: ${totalPromptTokens})`);
+    console.log('=================================');
 
     console.log("Pull Request review task completed.");
   }

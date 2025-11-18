@@ -1,9 +1,6 @@
 import * as tl from "azure-pipelines-task-lib/task";
-import * as https from 'https';
-import * as http from 'http';
-import fetch from 'node-fetch';
 
-export async function addCommentToPR(fileName: string, comment: string, agent: http.Agent | https.Agent) {
+export async function addCommentToPR(fileName: string, comment: string) {
   const body = {
     comments: [
       {
@@ -23,9 +20,10 @@ export async function addCommentToPR(fileName: string, comment: string, agent: h
   let response = await fetch(prUrl, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    agent: agent
-  });
+    body: JSON.stringify(body)
+    // Note: Native fetch in Node.js 20+ doesn't support custom agents directly
+    // The agent parameter is only used for backwards compatibility
+  } as any);
 
 
   if (response.status == 401) {
@@ -37,14 +35,13 @@ export async function addCommentToPR(fileName: string, comment: string, agent: h
   }
 }
 
-export async function deleteExistingComments(agent: http.Agent | https.Agent) {
+export async function deleteExistingComments() {
   console.log("Initializing...");
 
   const threadsUrl = `${tl.getVariable('SYSTEM.TEAMFOUNDATIONCOLLECTIONURI')}${tl.getVariable('SYSTEM.TEAMPROJECTID')}/_apis/git/repositories/${tl.getVariable('Build.Repository.Name')}/pullRequests/${tl.getVariable('System.PullRequest.PullRequestId')}/threads?api-version=5.1`;
   const threadsResponse = await fetch(threadsUrl, {
-    headers: { Authorization: `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}` },
-    agent: agent
-  });
+    headers: { Authorization: `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}` }
+  } as any);
 
   const threads = await threadsResponse.json() as { value: [] };
   const threadsWithContext = threads.value.filter((thread: any) => thread.threadContext !== null);
@@ -56,9 +53,8 @@ export async function deleteExistingComments(agent: http.Agent | https.Agent) {
   for (const thread of threadsWithContext as any[]) {
     const commentsUrl = `${tl.getVariable('SYSTEM.TEAMFOUNDATIONCOLLECTIONURI')}${tl.getVariable('SYSTEM.TEAMPROJECTID')}/_apis/git/repositories/${tl.getVariable('Build.Repository.Name')}/pullRequests/${tl.getVariable('System.PullRequest.PullRequestId')}/threads/${thread.id}/comments?api-version=5.1`;
     const commentsResponse = await fetch(commentsUrl, {
-      headers: { Authorization: `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}` },
-      agent: agent
-    });
+      headers: { Authorization: `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}` }
+    } as any);
 
     const comments = await commentsResponse.json() as { value: [] };
 
@@ -67,9 +63,8 @@ export async function deleteExistingComments(agent: http.Agent | https.Agent) {
 
       await fetch(removeCommentUrl, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}` },
-        agent: agent
-      });
+        headers: { Authorization: `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}` }
+      } as any);
     }
   }
 
