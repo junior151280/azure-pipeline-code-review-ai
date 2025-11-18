@@ -110,3 +110,5 @@ dist
 *.vsix
 
 *.js
+
+output/

@@ -29,16 +29,16 @@ export async function addCommentToPR(fileName: string, comment: string, agent: h
 
 
   if (response.status == 401) {
-    console.log(tl.TaskResult.Failed, "O Build Service deve ter acesso 'Contribuir para pull requests' ao repositorio. Consulte https://stackoverflow.com/a/57985733 para obter mais informacoes, reveja tambem as permissoes do recurso como token e link do endpoint.");
-    tl.setResult(tl.TaskResult.Failed, "O Build Service deve ter acesso 'Contribuir para pull requests' ao repositorio. Consulte https://stackoverflow.com/a/57985733 para obter mais informacoes, reveja tambem as permissoes do recurso como token e link do endpoint.");
+    console.log(tl.TaskResult.Failed, "The Build Service must have 'Contribute to pull requests' access to the repository. See https://stackoverflow.com/a/57985733 for more information. Also review the resource permissions such as token and endpoint link.");
+    tl.setResult(tl.TaskResult.Failed, "The Build Service must have 'Contribute to pull requests' access to the repository. See https://stackoverflow.com/a/57985733 for more information. Also review the resource permissions such as token and endpoint link.");
   }
   else {
-    console.log(`Novo comentario adicionado.`);
+    console.log(`New comment added.`);
   }
 }
 
 export async function deleteExistingComments(agent: http.Agent | https.Agent) {
-  console.log("Iniciando ...");
+  console.log("Initializing...");
 
   const threadsUrl = `${tl.getVariable('SYSTEM.TEAMFOUNDATIONCOLLECTIONURI')}${tl.getVariable('SYSTEM.TEAMPROJECTID')}/_apis/git/repositories/${tl.getVariable('Build.Repository.Name')}/pullRequests/${tl.getVariable('System.PullRequest.PullRequestId')}/threads?api-version=5.1`;
   const threadsResponse = await fetch(threadsUrl, {
@@ -73,7 +73,7 @@ export async function deleteExistingComments(agent: http.Agent | https.Agent) {
     }
   }
 
-  console.log("Deletando comentarios pre existentes...");
+  console.log("Deleting pre-existing comments...");
 }
 
 function getCollectionName(collectionUri: string) {

@@ -7,16 +7,16 @@ import * as http from 'http';
 
 export let consumeApi : string;
 export async function reviewFile(gitDiff: string, fileName: string, agent: http.Agent | https.Agent, apiKey: string, aoiEndpoint: string, tokenMax: string | undefined, temperature: string | undefined, additionalPrompts: string[] = []) {
-  console.log(`Iniciando revisao do arquivo: ${fileName} ...`);
+  console.log(`Starting review of file: ${fileName} ...`);
 
-  const instructions = `Você é um assistente do ramo de desenvolvimento de software.
-                        Sua missão é atuar como um revisor de código de um Pull Reques,  fornecendo feedback sobre possíveis bugs e boas práticas de código limpo, sendo didático e fazendo o uso de linguagem técnica.
-                        Você recebe as alterações do Pull Request em formato de patch, cada entrada de patch tem a mensagem de commit na linha de Assunto seguida pelas alterações de código (diffs) em formato unidiff.
-                        Como revisor de código, sua tarefa é:
-                        - Revisar apenas linhas adicionadas, editadas ou excluídas.
-                        - Se não houver bugs e as alterações estiverem corretas, escreva apenas a frase 'Sem Feedback.'
-                        - Se houver bug ou alterações de código incorretas, não escreva apenas a frase 'Sem Feedback.'
-                        -Forneça apenas instruções de melhoria.
+  const instructions = `You are a software development assistant.
+                        Your mission is to act as a code reviewer for a Pull Request, providing feedback on potential bugs and clean code best practices, being didactic and using technical language.
+                        You receive Pull Request changes in patch format, each patch entry has the commit message on the Subject line followed by code changes (diffs) in unidiff format.
+                        As a code reviewer, your tasks are:
+                        - Review only added, edited, or deleted lines.
+                        - If there are no bugs and the changes are correct, write only the phrase 'No Feedback.'
+                        - If there are bugs or incorrect code changes, do not write only the phrase 'No Feedback.'
+                        - Provide only improvement instructions.
                 ${additionalPrompts.length > 0 ? additionalPrompts.map(str => `- ${str}`).join('\n') : null}`;
 
   try {
@@ -24,11 +24,11 @@ export async function reviewFile(gitDiff: string, fileName: string, agent: http.
     let response: any;
     if (tokenMax === undefined || tokenMax === '') {
       tokenMax = '100';
-      console.log(`tokenMax fora dos parametros, para proseguir com a task foi setado para 100.`);
+      console.log(`tokenMax out of range, defaulting to 100 to continue with the task.`);
     }
     if (temperature === undefined || temperature === '' || parseInt(temperature) > 2) {
       temperature = '0';
-      console.log(`temperature fora dos parametros, para proseguir com a task foi setada para 0.`);
+      console.log(`temperature out of range, defaulting to 0 to continue with the task.`);
     }
 
     try {
@@ -50,19 +50,19 @@ export async function reviewFile(gitDiff: string, fileName: string, agent: http.
       choices = response.choices;
     }
     catch (responseError: any) {
-      console.log(`Encontrado erro, validar os parametros de entrada. ${responseError.response.status} ${responseError.response.message}`);
+      console.log(`Error encountered, validate input parameters. ${responseError.response.status} ${responseError.response.message}`);
     }
 
     if (choices && choices.length > 0) {
       const review = choices[0].message?.content as string;
 
-      if (review.trim() !== "Sem feedback.") {
+      if (review.trim() !== "No feedback.") {
         await addCommentToPR(fileName, review, agent);
       }
     }
 
-    console.log(`Revisao ${fileName} completa.`);
-    consumeApi = `Uso: Completions: ${response.usage.completion_tokens}, Prompts: ${response.usage.prompt_tokens}, Total: ${response.usage.total_tokens}`; 
+    console.log(`Review ${fileName} complete.`);
+    consumeApi = `Usage: Completions: ${response.usage.completion_tokens}, Prompts: ${response.usage.prompt_tokens}, Total: ${response.usage.total_tokens}`; 
   }
   catch (error: any) {
     if (error.response) {

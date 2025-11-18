@@ -1,0 +1,112 @@
+{
+  "id": "bfe3cd1b-dfb4-4c72-8f50-d0caea4f3db8",
+  "name": "IAPullRequestReview",
+  "friendlyName": "Pull Request Review by Azure OpenAI",
+  "description": "This task uses Azure OpenAI model to review Pull Requests",
+  "author": "Joao Antunes",
+  "helpMarkDown": "[Mais informacoes](https://github.com/jpitapeva/extensao-devops-pull-request)",
+  "category": "Utility",
+  "visibility": [
+    "Build"
+  ],
+  "demands": [],
+  "version": {
+    "Major": "0",
+    "Minor": "0",
+    "Patch": "8"
+  },
+  "minimumAgentVersion": "1.95.0",
+  "instanceNameFormat": "IAPullRequestReview $(message)",
+  "inputs": [
+    {
+      "name": "api_key",
+      "type": "string",
+      "label": "API Key",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Azure OpenAI API key."
+    },
+    {
+      "name": "aoi_endpoint",
+      "type": "string",
+      "label": "Azure OpenAI Endpoint",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Azure OpenAI endpoint URL. (required)"
+    },
+    {
+      "name": "use_https",
+      "type": "boolean",
+      "label": "Use Agent HTTPS",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Select this option to use HTTPS for the agent."
+    },
+    {
+      "name": "model",
+      "type": "pickList",
+      "label": "OpenAI model",
+      "required": false,
+      "options": {
+        "": "",
+        "gpt-4o": "GPT 4o",
+        "gpt-4-32k": "GPT 4 32K",
+        "gpt-3.5-turbo": "GPT 3.5 Turbo"
+      },
+      "helpMarkDown": "The OpenAI model to use. not used if you use Azure OpenAI. if no model is selected, the GPT 3.5 Turbo model is used."
+    },
+    {
+      "name": "aoi_tokenMax",
+      "type": "string",
+      "label": "Max Tokens",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "The maximum number of tokens to generate in the completion. The token count of your request plus max_tokens cannot exceed the model's context size. (required)"
+    },
+    {
+      "name": "aoi_temperature",
+      "type": "string",
+      "label": "Sampling Temperature (0-2)",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Sampling temperature to use, between 0 and 2. Higher values mean the model will take more risks. Try 0.9 for more creative applications and 0 for ones with a well-defined answer. (required)"
+    },
+    {
+      "name": "additional_prompts",
+      "type": "string",
+      "label": "Additional Prompts",
+      "defaultValue": "",
+      "required": false,
+      "helpMarkDown": "Specify additional Azure OpenAI prompts as a comma-separated list to enhance the code review process.\n\n- Add multiple prompts separated by commas.\n- These prompts will be used in conjunction with the main code review prompts.\n\n**Example:**\n```plaintext\nCheck variable naming, ensure consistent indentation, review error handling approach\n```"
+    },
+    {
+      "name": "file_extensions",
+      "type": "string",
+      "label": "File Extensions",
+      "defaultValue": "",
+      "required": false,
+      "helpMarkDown": "Specify a comma-separated list of file extensions for which you want to perform a code review. This input helps narrow the scope of the code review to specific file types.\n\n**Example:**\n```plaintext\n\".js,.ts,.css,.html\"\n```\n\nMake sure to provide file extensions without spaces after commas."
+    },
+    {
+      "name": "file_excludes",
+      "type": "string",
+      "label": "Files to Exclude",
+      "defaultValue": "",
+      "required": false,
+      "helpMarkDown": "## Files to Exclude from Configuration\n\n### Description\nSpecify a comma-separated list of file names that should be excluded from code reviews. This is useful for excluding sensitive files or preventing certain files from being reviewed.\n\n### Format\nProvide a list of file names separated by commas. For example: `file1.js, file2.py, secret.txt`\n\n### Default Value\nIf no files are specified, all files will be considered for code review by default."
+    },
+    {
+      "name": "support_self_signed_certificate",
+      "type": "boolean",
+      "label": "Support self-signed certificate",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Select this option to support self-signed certificate."
+    }
+  ],
+  "execution": {
+    "Node16": {
+      "target": "dist/index.js"
+    }
+  }
+}

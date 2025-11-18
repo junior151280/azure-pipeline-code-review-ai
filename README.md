@@ -1,23 +1,23 @@
-# Use o modelo OpenAI GPT para revisar solicitações pull para Azure Devops
-Task do Azure DevOps que adiciona comentários em portugues nas solicitações de PullRequest com a ajuda do ChatGPT.
+# Use OpenAI GPT Model to Review Pull Requests for Azure DevOps
+Azure DevOps task that adds comments to Pull Requests with the help of ChatGPT.
 
-## Instalação
-A instalação da task pode ser feita usando o [Visual Studio MarketPlace](https://marketplace.visualstudio.com/publishers/jpcompcombr).
+## Installation
+The task installation can be done using the [Visual Studio MarketPlace](https://marketplace.visualstudio.com/publishers/jpcompcombr).
 
-## Serviço Azure Open AI
-A formatação do endpoint é a seguinte: https://{XXXXXXXX}.openai.azure.com/openai/deployments/{MODEL_NAME}/chat/completions?api-version={API_VERSION}
+## Azure OpenAI Service
+The endpoint format is as follows: https://{XXXXXXXX}.openai.azure.com/openai/deployments/{MODEL_NAME}/chat/completions?api-version={API_VERSION}
 
-[Documentação API REST](https://learn.microsoft.com/pt-br/azure/ai-services/openai/reference).
+[REST API Documentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference).
 
-### Dê permissão ao agente de serviço de build
-Antes de usar esta task, certifique-se de que o serviço de build tenha permissões para contribuir em seu REPOSITORIO:
+### Grant Permissions to the Build Service Agent
+Before using this task, make sure the build service has permissions to contribute to your REPOSITORY:
 
 ![contribute_to_pr](https://github.com/jpitapeva/extensao-devops-pull-request/blob/main/images/contribute_to_pr.png?raw=true)
 
-### Permitir que a tarefa acesse o token do sistema
-Adicione uma seção de checkout com persistCredentials definido como true.
+### Allow the Task to Access the System Token
+Add a checkout section with persistCredentials set to true.
 
-#### Pipelines Yaml
+#### YAML Pipelines
 ```yaml
 jobs:
 - job:
@@ -39,7 +39,7 @@ jobs:
       aoi_temperature: 0
       file_extensions: 'js,ts,css,html'
       file_excludes: 'file1.js,file2.py,secret.txt'
-      additional_prompts: 'Prompt separado por virula, exemplo: corrija a nomenclatura de variaveis, garanta identacao consistente, revise a abordagem de tratamento de erros'
+      additional_prompts: 'Comma-separated prompts, example: check variable naming, ensure consistent indentation, review error handling approach'
 ```
 
 ## License

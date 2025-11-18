@@ -18,4 +18,4 @@ export function getTargetBranchName() {
   return `origin/${targetBranchName}`;
 }
 
-//npx tfx-cli extension create
+// Build command: npx tfx-cli extension create

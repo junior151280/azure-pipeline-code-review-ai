@@ -13,7 +13,7 @@
             "id": "Microsoft.VisualStudio.Services"
         }
     ],    
-    "description": "Esta tarefa usa o modelo AzureOpenAI para revisar PullRequests",
+    "description": "This task uses Azure OpenAI model to review Pull Requests",
     "categories": [
         "Azure Pipelines"
     ],
@@ -29,7 +29,7 @@
     ],
     "files": [
         {
-            "path": "JPCompcombr"
+            "path": "task"
         }
     ],
     "repository" : {
@@ -49,7 +49,7 @@
                 "ms.vss-distributed-task.tasks"
             ],
             "properties": {
-                "name": "JPCompcombr"
+                "name": "task"
             }
         }
     ]

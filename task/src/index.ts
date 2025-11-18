@@ -13,7 +13,7 @@ import minimatch from 'minimatch';
 async function run() {
   try {
     if (tl.getVariable('Build.Reason') !== 'PullRequest') {
-      tl.setResult(tl.TaskResult.Skipped, "Esta tarefa deve ser executada somente quando o build for acionado atraves de uma solicitacao pr.");
+      tl.setResult(tl.TaskResult.Skipped, "This task should only run when the build is triggered by a pull request.");
       return;
     }
 
@@ -32,12 +32,12 @@ async function run() {
     const useHttps = tl.getBoolInput('use_https', true);
 
     if (apiKey == undefined) {
-      tl.setResult(tl.TaskResult.Failed, 'No Api Key provided!');
+      tl.setResult(tl.TaskResult.Failed, 'No API Key provided!');
       return;
     }
 
     if (aoiEndpoint == undefined) {
-      tl.setResult(tl.TaskResult.Failed, 'No Endpoint AzureOpenAi provided!');
+      tl.setResult(tl.TaskResult.Failed, 'No Azure OpenAI Endpoint provided!');
       return;
     }
     
@@ -60,38 +60,40 @@ async function run() {
 
     await deleteExistingComments(Agent);
 
-    console.log('Iniciando Code Review');
+    console.log('Starting Code Review');
 
     let filesToReview = await _repository.GetChangedFiles(fileExtensions, filesToExclude);
     if (filesToReview.length === 0 || filesToReview.length == 0) {
-      console.log(`Nao encontrado codigo passivel de revisao, revise os parametros de entrada da tarefa.`);
-      tl.setResult(tl.TaskResult.SucceededWithIssues, "Nao encontrado codigo passivel de revisao, revise os parametros de entrada da tarefa.");
+      console.log(`No reviewable code found. Please review the task input parameters.`);
+      tl.setResult(tl.TaskResult.SucceededWithIssues, "No reviewable code found. Please review the task input parameters.");
       return
     }
 
-    console.log(`Detectado alteracao em ${filesToReview.length} arquivos`);
+    console.log(`Detected changes in ${filesToReview.length} file(s)`);
 
     for (let index = 0; index < filesToReview.length; index++) {
 
       const fileToReview = filesToReview[index];
       let diff = await _repository.GetDiff(fileToReview);
+      // TODO: Extract model name from endpoint and replace with openaiModel parameter
+      // let endpoint = aoiEndpoint.replace(aoiEndpoint.match(/gpt[^/]+/)[0], openaiModel);
+
       let review = await reviewFile(diff, fileToReview, Agent, apiKey, aoiEndpoint, tokenMax, temperature, additionalPrompts)
 
       if (diff.indexOf('NO_COMMENT') < 0) {
         await pr_1.addCommentToPR(fileToReview, review, Agent);
       }
 
-      console.log(`Revisao finalizada do arquivo ${fileToReview}`)
-      //gerar um console.log com o cosumo de tokens o consumo esta na variavel consumeApi gerada no arquivo review.ts
+      console.log(`Review completed for file: ${fileToReview}`)
       console.log(`----------------------------------`)
-      console.log(`Consumo de Tokens: ${consumeApi}`)
+      console.log(`Token Usage: ${consumeApi}`)
       console.log(`----------------------------------`)
     }
 
-    console.log("Task de Pull Request finalizada.");
+    console.log("Pull Request review task completed.");
   }
   catch (err: any) {
-    console.log("Encontrado erro", err.message);
+    console.log("Error encountered:", err.message);
     console.log(tl.TaskResult.Failed, err.message);
     tl.setResult(tl.TaskResult.Failed, err.message);
   }
