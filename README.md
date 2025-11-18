@@ -5,7 +5,23 @@ Azure DevOps task that adds comments to Pull Requests with the help of ChatGPT.
 The task installation can be done using the [Visual Studio MarketPlace](https://marketplace.visualstudio.com/publishers/jpcompcombr).
 
 ## Azure OpenAI Service
-The endpoint format is as follows: https://{XXXXXXXX}.openai.azure.com/openai/deployments/{MODEL_NAME}/chat/completions?api-version={API_VERSION}
+
+Azure OpenAI supports two endpoint formats:
+
+**Format 1 (Legacy):**
+```
+https://{RESOURCE}.openai.azure.com/openai/deployments/{MODEL_NAME}/chat/completions?api-version={API_VERSION}
+```
+
+**Format 2 (Current):**
+```
+https://{ADMIN-RESOURCE}.{REGION}.cognitiveservices.azure.com/openai/deployments/{MODEL_NAME}/chat/completions?api-version={API_VERSION}
+```
+
+**Example:**
+```
+https://admin-ma4fdje4-eastus2.cognitiveservices.azure.com/openai/deployments/gpt-4.1-jailtons/chat/completions?api-version=2025-01-01-preview
+```
 
 [REST API Documentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference).
 

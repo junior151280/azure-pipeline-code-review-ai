@@ -27,7 +27,15 @@ export class InputValidator {
     } else {
       try {
         new URL(endpoint);
-        if (!endpoint.includes('openai.azure.com') && !endpoint.includes('api.openai.com')) {
+        // Accept both old and new Azure OpenAI endpoint formats:
+        // Old: https://<resource>.openai.azure.com/...
+        // New: https://<admin-resource>.<region>.cognitiveservices.azure.com/openai/...
+        // Also: OpenAI direct API
+        const isAzureOpenAI = endpoint.includes('openai.azure.com') || 
+                              endpoint.includes('cognitiveservices.azure.com');
+        const isOpenAI = endpoint.includes('api.openai.com');
+        
+        if (!isAzureOpenAI && !isOpenAI) {
           errors.push('Endpoint should be a valid Azure OpenAI or OpenAI endpoint URL');
         }
       } catch {
@@ -90,7 +98,7 @@ export class InputValidator {
 
   static validateModel(model: string | undefined): string {
     if (!model || model === '') {
-      return 'gpt-4-32k';
+      return 'gpt-4o'; // Default to latest stable model
     }
     return model;
   }
