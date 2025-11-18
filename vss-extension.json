@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "bfe3cd1b-dfb4-4c72-8f50-d0caea4f3db8",
-    "name": "IAPullRequestReview",
+    "name": "ADOPRCodeReviewAI",
     "version": "0.0.8",
     "publisher": "junior151280",
     "galleryFlags": [
@@ -34,7 +34,7 @@
     ],
     "repository" : {
         "type" : "git",
-        "uri" : "https://github.com/jpitapeva/extensao-devops-pull-request"
+        "uri" : "https://github.com/junior151280/azure-pipeline-code-review-ai"
     },
     "content": {
         "details": {

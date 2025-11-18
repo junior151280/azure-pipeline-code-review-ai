@@ -1,10 +1,10 @@
 {
   "id": "bfe3cd1b-dfb4-4c72-8f50-d0caea4f3db8",
-  "name": "IAPullRequestReview",
-  "friendlyName": "Pull Request Review by Azure OpenAI",
+  "name": "ADOPRCodeReviewAI",
+  "friendlyName": "Azure Pipeline PR Code Review by Azure OpenAI",
   "description": "This task uses Azure OpenAI model to review Pull Requests",
-  "author": "Joao Antunes",
-  "helpMarkDown": "[Mais informacoes](https://github.com/jpitapeva/extensao-devops-pull-request)",
+  "author": "Jailton S. Sales Jr",
+  "helpMarkDown": "[More information](https://github.com/junior151280/azure-pipeline-code-review-ai)",
   "category": "Utility",
   "visibility": [
     "Build"
@@ -13,10 +13,10 @@
   "version": {
     "Major": "0",
     "Minor": "0",
-    "Patch": "8"
+    "Patch": "1"
   },
   "minimumAgentVersion": "1.95.0",
-  "instanceNameFormat": "IAPullRequestReview $(message)",
+  "instanceNameFormat": "ADOPRCodeReviewAI $(message)",
   "inputs": [
     {
       "name": "api_key",

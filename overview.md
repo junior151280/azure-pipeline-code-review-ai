@@ -12,7 +12,7 @@ The endpoint format is as follows: https://{XXXXXXXX}.openai.azure.com/openai/de
 ### Grant Permissions to the Build Service Agent
 Before using this task, make sure the build service has permissions to contribute to your REPOSITORY:
 
-![contribute_to_pr](https://github.com/jpitapeva/extensao-devops-pull-request/blob/main/images/contribute_to_pr.png?raw=true)
+![contribute_to_pr](https://github.com/junior151280/azure-pipeline-code-review-ai/blob/main/images/contribute_to_pr.png?raw=true)
 
 ### Allow the Task to Access the System Token
 Add a checkout section with persistCredentials set to true.
@@ -43,7 +43,7 @@ jobs:
 ```
 
 ## License
-[MIT](https://raw.githubusercontent.com/mlarhrouch/azure-pipeline-gpt-pr-review/main/LICENSE)
+[MIT](https://raw.githubusercontent.com/junior151280/azure-pipeline-code-review-ai/main/LICENSE)
 
 ## Plus
 [Devops Publish](https://learn.microsoft.com/en-us/azure/devops/extend/publish/overview?view=azure-devops)
