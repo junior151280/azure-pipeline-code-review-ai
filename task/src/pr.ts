@@ -17,6 +17,9 @@ export async function addCommentToPR(fileName: string, comment: string) {
 
   const prUrl = `${tl.getVariable('SYSTEM.TEAMFOUNDATIONCOLLECTIONURI')}${tl.getVariable('SYSTEM.TEAMPROJECTID')}/_apis/git/repositories/${tl.getVariable('Build.Repository.Name')}/pullRequests/${tl.getVariable('System.PullRequest.PullRequestId')}/threads?api-version=5.1`
 
+  console.log(`Attempting to add comment to PR for file: ${fileName}`);
+  console.log(`PR URL: ${prUrl}`);
+
   let response = await fetch(prUrl, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${tl.getVariable('SYSTEM.ACCESSTOKEN')}`, 'Content-Type': 'application/json' },
@@ -25,13 +28,21 @@ export async function addCommentToPR(fileName: string, comment: string) {
     // The agent parameter is only used for backwards compatibility
   } as any);
 
+  console.log(`Response status: ${response.status} ${response.statusText}`);
 
-  if (response.status == 401) {
-    console.log(tl.TaskResult.Failed, "The Build Service must have 'Contribute to pull requests' access to the repository. See https://stackoverflow.com/a/57985733 for more information. Also review the resource permissions such as token and endpoint link.");
-    tl.setResult(tl.TaskResult.Failed, "The Build Service must have 'Contribute to pull requests' access to the repository. See https://stackoverflow.com/a/57985733 for more information. Also review the resource permissions such as token and endpoint link.");
+  if (response.status === 401) {
+    const errorMsg = "The Build Service must have 'Contribute to pull requests' access to the repository. See https://stackoverflow.com/a/57985733 for more information. Also review the resource permissions such as token and endpoint link.";
+    console.error(errorMsg);
+    tl.setResult(tl.TaskResult.Failed, errorMsg);
+  }
+  else if (response.status >= 200 && response.status < 300) {
+    console.log(`✓ Comment successfully added to file: ${fileName}`);
   }
   else {
-    console.log(`New comment added.`);
+    const responseText = await response.text();
+    console.error(`Failed to add comment. Status: ${response.status}`);
+    console.error(`Response body: ${responseText}`);
+    throw new Error(`Failed to add comment to PR: ${response.status} - ${responseText}`);
   }
 }
 
