@@ -42,9 +42,21 @@ export class Repository {
             console.log(`Exclude patterns: ${patternsToExclude.join(', ')}`);
             const beforeExclusion = filesToReview.length;
             filesToReview = filesToReview.filter(file => {
-                const shouldExclude = patternsToExclude.some(pattern => minimatch(file, pattern));
+                // Test each pattern and log details
+                let matchedPattern: string | undefined;
+                const shouldExclude = patternsToExclude.some(pattern => {
+                    const matches = minimatch(file, pattern, { nocase: true, dot: true });
+                    if (matches) {
+                        matchedPattern = pattern;
+                    }
+                    return matches;
+                });
+                
                 if (shouldExclude) {
-                    console.log(`Excluding file: ${file} (matched pattern)`);
+                    console.log(`✗ Excluding file: ${file} (matched: ${matchedPattern})`);
+                } else {
+                    // Debug: show why it wasn't excluded
+                    console.log(`✓ Including file: ${file}`);
                 }
                 return !shouldExclude;
             });
