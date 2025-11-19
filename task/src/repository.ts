@@ -28,13 +28,23 @@ export class Repository {
         let filesToReview = files.filter(file => !binaryExtensions.includes(file.slice((file.lastIndexOf(".") - 1 >>> 0) + 2)));
 
         if(fileExtensions) {
-            let patternsToInclude = fileExtensions.trim().split(',');
+            let patternsToInclude = fileExtensions.trim().split(',').map(p => p.trim()).filter(p => p.length > 0);
+            console.log(`Include patterns: ${patternsToInclude.join(', ')}`);
             filesToReview = filesToReview.filter(file => patternsToInclude.some(pattern => minimatch(file, pattern)));
         }
     
         if(filesToExclude) {
-            let patternsToExclude = filesToExclude.trim().split(',');
-            filesToReview = filesToReview.filter(file => !patternsToExclude.some(pattern => minimatch(file, pattern)));
+            let patternsToExclude = filesToExclude.trim().split(',').map(p => p.trim()).filter(p => p.length > 0);
+            console.log(`Exclude patterns: ${patternsToExclude.join(', ')}`);
+            const beforeExclusion = filesToReview.length;
+            filesToReview = filesToReview.filter(file => {
+                const shouldExclude = patternsToExclude.some(pattern => minimatch(file, pattern));
+                if (shouldExclude) {
+                    console.log(`Excluding file: ${file} (matched pattern)`);
+                }
+                return !shouldExclude;
+            });
+            console.log(`Excluded ${beforeExclusion - filesToReview.length} file(s) based on exclude patterns`);
         }
 
 
