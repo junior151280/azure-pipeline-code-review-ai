@@ -27,6 +27,10 @@ export class Repository {
         let files = diffs.split('\n').filter(line => line.trim().length > 0);
         let filesToReview = files.filter(file => !binaryExtensions.includes(file.slice((file.lastIndexOf(".") - 1 >>> 0) + 2)));
 
+        console.log(`Found ${filesToReview.length} non-binary file(s) to potentially review`);
+        console.log(`File extensions filter: ${fileExtensions || '(none)'}`);
+        console.log(`File excludes filter: ${filesToExclude || '(none)'}`);
+
         if(fileExtensions) {
             let patternsToInclude = fileExtensions.trim().split(',').map(p => p.trim()).filter(p => p.length > 0);
             console.log(`Include patterns: ${patternsToInclude.join(', ')}`);
